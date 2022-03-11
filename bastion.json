@@ -1,0 +1,21 @@
+[ {
+    "ParameterKey": "EnvironmentName",
+    "ParameterValue": "Udagram"
+  },
+  
+  {
+    "ParameterKey": "BastionAMI",
+    "ParameterValue": "ami-0e472ba40eb589f49"
+  },
+
+  {
+    "ParameterKey": "BastionInstanceType",
+    "ParameterValue": "t2.medium"
+  },
+
+  {
+    "ParameterKey": "BastionKeyName",
+    "ParameterValue": "firstkey"
+    }
+
+]

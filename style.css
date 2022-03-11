@@ -1,0 +1,47 @@
+body, html{
+    overflow-x: hidden;
+    scroll-behavior: smooth;
+}
+.medication{
+    background-repeat: no-repeat;
+    background-size: cover;
+    padding: 10px;
+    background-image: url(../Image/national-cancer-institute-701-FJcjLAQ-unsplash.jpg);
+}
+.Home{
+  color: #00D6A3;
+}
+.features{
+  background-color: #033B4A;
+}
+.What-is-vaccine-app {
+  color: #00D6A3;
+}
+.review{
+  background-image: url(../Image/map\ svg\ 1.png);
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+.get-app{
+  background-color: #033B4A;
+  padding: 5%;
+  padding-bottom: 8%;
+}
+.download{
+  background-color: #00D6A3;
+}
+.play-store{
+  background-color: #00D6A3;
+  padding: -30%;
+}
+.checkout{
+  background-color: #033B4A;
+}
+.card-img{
+  background-color: #033B4A;
+}
+.card-body{
+  background-color: #033B4A;
+  color: white;
+  border: none !important;
+}

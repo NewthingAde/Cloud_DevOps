@@ -1,0 +1,169 @@
+Description:
+  Oluwasegun Adesanya /Udagram Program
+
+Parameters:
+  EnvironmentName:
+    Description: Prefixed to resource names environment name.
+    Type: String
+    Default: Udagram
+
+  BastionAMI:
+    Description: Machine image for bastion host.
+    Type: String
+    Default: ami-0e472ba40eb589f49
+  
+  BastionInstanceType:
+    Description: This is the bastion Instance type
+    Type: String
+    Default: t2.medium
+
+  BastionKeyName:
+    Description: Name of an existing KeyPair to enable SSH access to the web servers from bastion host.
+    Type: "AWS::EC2::KeyPair::KeyName"
+    Default: firstkey
+  
+  LocalHostIP:
+    Description: This is the local host
+    Type: String
+    Default: 1.4.3.2/32
+
+Resources:
+  BastionFullSSM:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      ManagedPolicyArns: 
+        - "arn:aws:iam::aws:policy/AmazonSSMFullAccess"
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+              - ec2.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Path: "/"
+  
+  ProfileRolesForBastion:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: "/" 
+      Roles: 
+        - !Ref BastionFullSSM
+  
+  BastionSecGroup: 
+    Type: "AWS::EC2::SecurityGroup"
+    Properties: 
+      GroupDescription: "Allow SSH access via port 22 to web servers"
+      VpcId: 
+        Fn::ImportValue: !Sub "${EnvironmentName}-VPCID"  
+      SecurityGroupIngress: 
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: !Ref LocalHostIP
+
+  Bastion1: 
+    Type: "AWS::EC2::Instance"
+    Properties:
+      ImageId: !Ref BastionAMI 
+      InstanceType: !Ref BastionInstanceType
+      IamInstanceProfile: !Ref ProfileRolesForBastion
+      SecurityGroupIds: 
+        - !Ref BastionSecGroup
+      KeyName: !Ref BastionKeyName
+      SubnetId: 
+        Fn::ImportValue: !Sub "${EnvironmentName}-PUB1-SN"
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          apt-get update -y
+          apt-get install unzip python3-pip apache2 awscli -y
+          systemctl start apache2.service
+          snap start amazon-ssm-agent
+          pip3 install --upgrade awscli
+          curl "https://s3.amazonaws.com/session-manager-downloads/plugin/latest/ubuntu_64bit/session-manager-plugin.deb" -o "session-manager-plugin.deb"
+          dpkg -i session-manager-plugin.deb
+    DependsOn:
+      - BastionSecGroup
+      - ProfileRolesForBastion
+
+  EIP1:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: 
+        Fn::ImportValue:
+          !Sub "${EnvironmentName}-VPCID"      
+
+  EIPAssociation1:
+    Type: AWS::EC2::EIPAssociation
+    Properties:
+      InstanceId:
+        Ref: Bastion1
+      AllocationId: !GetAtt EIP1.AllocationId
+    DependsOn:
+      - Bastion1
+      - EIP1
+
+  Bastion2: 
+    Type: "AWS::EC2::Instance"
+    Properties:
+      ImageId: !Ref BastionAMI 
+      InstanceType: !Ref BastionInstanceType
+      IamInstanceProfile: !Ref ProfileRolesForBastion
+      SecurityGroupIds: 
+        - !Ref BastionSecGroup
+      KeyName: !Ref BastionKeyName
+      SubnetId: 
+        Fn::ImportValue: !Sub "${EnvironmentName}-PUB2-SN"
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          apt-get update -y
+          apt-get install unzip python3-pip apache2 awscli -y
+          systemctl start apache2.service
+          snap start amazon-ssm-agent
+          pip3 install --upgrade awscli
+          curl "https://s3.amazonaws.com/session-manager-downloads/plugin/latest/ubuntu_64bit/session-manager-plugin.deb" -o "session-manager-plugin.deb"
+          dpkg -i session-manager-plugin.deb
+    DependsOn:
+      - BastionSecGroup
+      - ProfileRolesForBastion
+
+  EIP2:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: 
+        Fn::ImportValue:
+          !Sub "${EnvironmentName}-VPCID"      
+
+  EIPAssociation2:
+    Type: AWS::EC2::EIPAssociation
+    Properties:
+      InstanceId:
+        Ref: Bastion2
+      AllocationId: !GetAtt EIP2.AllocationId
+    DependsOn:
+      - Bastion2
+      - EIP2
+
+Outputs:
+  BastionHost1CIDR:
+    Description: A reference to the Bastion Host 1 CIDR.
+    Value: 
+      !Join
+        - ''
+        - - !GetAtt Bastion1.PrivateIp
+          - !Sub '/32'
+    Export:
+        Name: !Sub ${EnvironmentName}-BASTION-1-CIDR
+
+  BastionHost2CIDR:
+    Description: A reference to the Bastion Host 2 CIDR.
+    Value: 
+      !Join
+        - ''
+        - - !GetAtt Bastion2.PrivateIp
+          - !Sub '/32'
+    Export:
+        Name: !Sub ${EnvironmentName}-BASTION-2-CIDR 
